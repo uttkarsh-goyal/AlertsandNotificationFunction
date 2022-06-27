@@ -62,7 +62,10 @@ def main(mytimer: func.TimerRequest) -> None:
 					Delta = DeepDiff(OldData, OriginalData, ignore_order=True)
 					DeltaString = json.dumps(Delta) 
 					#print(DeltaString)
-					regixPattern = '\[.+?\]'
+					print(type(Delta))
+					print(type(DeltaString))
+					#to replace regix with some sepecific number while getting delta
+					regixPattern = '\[[0-9]+\]'
 					replaceString = '[1]'
 					deltaOutput = re.sub(pattern=regixPattern, repl=replaceString, string=DeltaString)
 
