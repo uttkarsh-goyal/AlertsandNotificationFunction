@@ -62,20 +62,32 @@ def main(mytimer: func.TimerRequest) -> None:
 					Delta = DeepDiff(OldData, OriginalData, ignore_order=True)
 					DeltaString = json.dumps(Delta) 
 					#print(DeltaString)
-					print(type(Delta))
-					print(type(DeltaString))
-					#to replace regix with some sepecific number while getting delta
-					regixPattern = '\[[0-9]+\]'
-					replaceString = '[1]'
-					deltaOutput = re.sub(pattern=regixPattern, repl=replaceString, string=DeltaString)
 
-					DeltaBlob = Data["typeName"]+".json"
-					#print(DeltaBlob)
-					blobConnect = BlobClient.from_connection_string(conn_str=blobConnectionString, container_name=ContainerName,blob_name=DeltaBlob )
-					if blobConnect.exists():
-						blobConnect.delete_blob()
-					DeltaBlobUpload = blobConnect.upload_blob(deltaOutput)
-					#print(DeltaBlobUpload)
+					tempBlob = BlobClient.from_connection_string(conn_str=blobConnectionString, container_name=ContainerName,blob_name="temp.json" )
+					if tempBlob.exists():
+						tempBlob.delete_blob()
+					tempBlob.upload_blob(DeltaString)
+					tempDownload = tempBlob.download_blob()
+					tempData = json.loads(tempDownload.readall())
+	
+					for key  in tempData:
+						test567 = json.dumps(tempData[key])
+
+						#to replace regix with some sepecific number while getting delta
+						regixPattern = '\[[0-9]+\]'
+						replaceString = '[1]'
+						deltaOutput = re.sub(pattern=regixPattern, repl=replaceString, string=test567)
+	
+						DeltaBlob = Data["typeName"]+"/"+key+".json"
+	
+						#print(DeltaBlob)
+						blobConnect = BlobClient.from_connection_string(conn_str=blobConnectionString, container_name=ContainerName,blob_name=DeltaBlob )
+						if blobConnect.exists():
+							blobConnect.delete_blob()
+					
+						DeltaBlobUpload = blobConnect.upload_blob(deltaOutput)
+						
+					tempBlob.delete_blob()
 		
 				else: logging.info(f"There is no difference in MetaData for {entityType}")
 			else:
