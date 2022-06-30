@@ -6,7 +6,6 @@ from azure.core.exceptions import HttpResponseError
 from azure.storage.blob import  BlobClient
 from deepdiff import DeepDiff
 import json
-import re
 import azure.functions as func
 
 client_id = os.environ["client_id"]
@@ -71,24 +70,22 @@ def main(mytimer: func.TimerRequest) -> None:
 					tempData = json.loads(tempDownload.readall())
 	
 					for key  in tempData:
-						test567 = json.dumps(tempData[key])
+						countVar = 1
+						for newKey in tempData[key]:
+							deltaOutput =  json.dumps(tempData[key][newKey])
+							
+							Counter = str(countVar)
 
-						#to replace regix with some sepecific number while getting delta
-						regixPattern = '\[[0-9]+\]'
-						replaceString = '[1]'
-						deltaOutput = re.sub(pattern=regixPattern, repl=replaceString, string=test567)
-	
-						DeltaBlob = Data["typeName"]+"/"+key+".json"
-	
-						#print(DeltaBlob)
-						blobConnect = BlobClient.from_connection_string(conn_str=blobConnectionString, container_name=ContainerName,blob_name=DeltaBlob )
-						if blobConnect.exists():
-							blobConnect.delete_blob()
-					
-						DeltaBlobUpload = blobConnect.upload_blob(deltaOutput)
-						
-					tempBlob.delete_blob()
+							DeltaBlob = Data["typeName"]+"/"+key+Counter+".json"
 		
+							#print(DeltaBlob)
+							blobConnect = BlobClient.from_connection_string(conn_str=blobConnectionString, container_name=ContainerName,blob_name=DeltaBlob )
+							if blobConnect.exists():
+								blobConnect.delete_blob()
+							
+							DeltaBlobUpload = blobConnect.upload_blob(deltaOutput)
+							countVar=countVar + 1
+
 				else: logging.info(f"There is no difference in MetaData for {entityType}")
 			else:
 				print("new entity is created")
