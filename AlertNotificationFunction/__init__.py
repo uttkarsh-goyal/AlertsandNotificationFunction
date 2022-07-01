@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from azure.identity import ClientSecretCredential 
 from azure.purview.catalog import PurviewCatalogClient
 from azure.core.exceptions import HttpResponseError
@@ -71,21 +72,34 @@ def main(mytimer: func.TimerRequest) -> None:
 	
 					for key  in tempData:
 						countVar = 1
-						for newKey in tempData[key]:
-							deltaOutput =  json.dumps(tempData[key][newKey])
+						if key != "values_changed":
+							for newKey in tempData[key]:
+								deltaOutput =  json.dumps(tempData[key][newKey])
 							
-							Counter = str(countVar)
-
-							DeltaBlob = Data["typeName"]+"/"+key+Counter+".json"
+								Counter = str(countVar)
+	
+								DeltaBlob = Data["typeName"]+"/"+key+Counter+".json"
 		
+								#print(DeltaBlob)
+								blobConnect = BlobClient.from_connection_string(conn_str=blobConnectionString, container_name=ContainerName,blob_name=DeltaBlob )
+								if blobConnect.exists():
+									blobConnect.delete_blob()
+							
+								DeltaBlobUpload = blobConnect.upload_blob(deltaOutput)
+								countVar=countVar + 1
+						else:
+							regixPattern = '\[[0-9]+\]'
+							replaceString = '[1]'
+							deltaOutput = re.sub(pattern=regixPattern, repl=replaceString, string= json.dumps(tempData[key]))
+							
+							DeltaBlob = Data["typeName"]+"/"+key+".json"
 							#print(DeltaBlob)
 							blobConnect = BlobClient.from_connection_string(conn_str=blobConnectionString, container_name=ContainerName,blob_name=DeltaBlob )
 							if blobConnect.exists():
 								blobConnect.delete_blob()
 							
 							DeltaBlobUpload = blobConnect.upload_blob(deltaOutput)
-							countVar=countVar + 1
-
+							
 				else: logging.info(f"There is no difference in MetaData for {entityType}")
 			else:
 				print("new entity is created")
