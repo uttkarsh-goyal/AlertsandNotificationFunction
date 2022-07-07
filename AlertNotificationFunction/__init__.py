@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from tokenize import Name
 from azure.identity import ClientSecretCredential 
 from azure.purview.catalog import PurviewCatalogClient
 from azure.core.exceptions import HttpResponseError
@@ -39,7 +40,9 @@ def main(mytimer: func.TimerRequest) -> None:
 		
 			Data = client.entity.get_by_guid(guid=Guid)["entity"]
 			entityType = Data["typeName"]
-		
+
+			Name = client.entity.get_by_guid(guid=Guid)["entity"]["attributes"]["name"]
+
 			if Data["typeName"]=="azure_sql_table":
 				logging.info(f"Entity type is {entityType}")
 				OriginalData = Data["relationshipAttributes"]["columns"]
@@ -74,6 +77,9 @@ def main(mytimer: func.TimerRequest) -> None:
 						countVar = 1
 						if key != "values_changed":
 							for newKey in tempData[key]:
+								addName = tempData[key][newKey]
+								addName['Name'] = Name
+
 								deltaOutput =  json.dumps(tempData[key][newKey])
 							
 								Counter = str(countVar)
@@ -88,6 +94,9 @@ def main(mytimer: func.TimerRequest) -> None:
 								DeltaBlobUpload = blobConnect.upload_blob(deltaOutput)
 								countVar=countVar + 1
 						else:
+							addName = tempData[key]
+							addName['Name'] = Name
+							
 							regixPattern = '\[[0-9]+\]'
 							replaceString = '[1]'
 							deltaOutput = re.sub(pattern=regixPattern, repl=replaceString, string= json.dumps(tempData[key]))
